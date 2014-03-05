@@ -1,9 +1,13 @@
 import contextlib
-from ctypes import (addressof, cast, create_string_buffer, string_at, c_char,
-    c_uint, POINTER)
-
+# from ctypes import (addressof, cast, create_string_buffer, string_at, c_char,
+#     c_uint, POINTER)
+import compat
 from MySQLdb import cursors, libmysql, converters
 from MySQLdb.constants import error_codes
+from MySQLdb.exceptions import (
+    Warning, Error, InterfaceError,
+    DataError, DatabaseError, OperationalError, IntegrityError,
+    InternalError, ProgrammingError, NotSupportedError)
 
 
 class Connection(object):
@@ -21,32 +25,33 @@ class Connection(object):
         error_codes.ROW_IS_REFERENCED_2: "IntegrityError",
     }
 
-    from MySQLdb.exceptions import (Warning, Error, InterfaceError,
-        DataError, DatabaseError, OperationalError, IntegrityError,
-        InternalError, ProgrammingError, NotSupportedError)
-
-    def __init__(self, host=None, user=None, passwd=None, db=None, port=0,
-        client_flag=0, charset=None, init_command=None, connect_timeout=None,
-        sql_mode=None, encoders=None, decoders=None, use_unicode=True):
+    def __init__(
+            self, host=None, user=None, passwd=None, db=None, port=0,
+            client_flag=0, charset=None, init_command=None,
+            connect_timeout=None, sql_mode=None, encoders=None,
+            decoders=None, use_unicode=True):
 
         self._db = libmysql.c.mysql_init(None)
 
         if connect_timeout is not None:
-            connect_timeout = c_uint(connect_timeout)
-            res = libmysql.c.mysql_options(self._db,
+            # connect_timeout = c_uint(connect_timeout)
+            res = libmysql.c.mysql_options(
+                self._db,
                 libmysql.MYSQL_OPT_CONNECT_TIMEOUT,
-                cast(addressof(connect_timeout), POINTER(c_char))
-            )
+                libmysql.ffi.cast('void *', connect_timeout))
             if res:
                 self._exception()
         if init_command is not None:
-            res = libmysql.c.mysql_options(self._db,
-                libmysql.MYSQL_INIT_COMMAND, init_command
-            )
+            res = libmysql.c.mysql_options(
+                self._db,
+                libmysql.MYSQL_INIT_COMMAND, init_command)
             if res:
                 self._exception()
 
-        res = libmysql.c.mysql_real_connect(self._db, host, user, passwd, db, port, None, client_flag)
+        res = \
+            libmysql.c.mysql_real_connect(
+                self._db, host, user, passwd, db, port,
+                libmysql.ffi.NULL, client_flag)
         if not res:
             self._exception()
 
@@ -130,10 +135,7 @@ class Connection(object):
 
     def string_literal(self, obj):
         self._check_closed()
-        obj = str(obj)
-        buf = create_string_buffer(len(obj) * 2)
-        length = libmysql.c.mysql_real_escape_string(self._db, buf, obj, len(obj))
-        return "'%s'" % string_at(buf, length)
+        return compat.string_literal(obj)
 
     def character_set_name(self):
         self._check_closed()
@@ -142,6 +144,7 @@ class Connection(object):
     def get_server_info(self):
         self._check_closed()
         return libmysql.c.mysql_get_server_info(self._db)
+
 
 def connect(*args, **kwargs):
     return Connection(*args, **kwargs)

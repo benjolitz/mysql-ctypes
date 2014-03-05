@@ -1,9 +1,10 @@
 import collections
-import ctypes
+# import ctypes
 import itertools
 import re
 import warnings
 import weakref
+
 
 from MySQLdb import libmysql
 
@@ -14,7 +15,6 @@ INSERT_VALUES = re.compile(
     r"(?P<end>.*)",
     re.I
 )
-
 
 
 class Cursor(object):
@@ -47,8 +47,11 @@ class Cursor(object):
 
     def _query(self, query):
         self._executed = query
+        query_str = libmysql.ffi.new('char []', query)
         self.connection._check_closed()
-        r = libmysql.c.mysql_real_query(self.connection._db, ctypes.c_char_p(query), len(query))
+        r = \
+            libmysql.c.mysql_real_query(
+                self.connection._db, query_str, len(query))
         if r:
             self.connection._exception()
         self._result = Result(self)
@@ -70,7 +73,8 @@ class Cursor(object):
         # MySQLdb's argument escaping rules are completely at odds with the
         # DB-API spec, unfortunately the project this codebase was originally
         # written for uses those features, so we emulate them.
-        if isinstance(args, collections.Sequence) and not isinstance(args, basestring):
+        if isinstance(args, collections.Sequence) \
+                and not isinstance(args, basestring):
             return tuple([
                 self._get_encoder(arg)(self.connection, arg)
                 for arg in args
@@ -144,7 +148,6 @@ class Cursor(object):
         self._query(query)
         return args
 
-
     def fetchall(self):
         self._check_executed()
         if not self._result:
@@ -171,11 +174,13 @@ class Cursor(object):
     def setoutputsize(self, *args):
         pass
 
+
 class DictCursor(Cursor):
     def _make_row(self, row):
         return dict(
             (description[0], value)
-            for description, value in itertools.izip(self._result.description, row)
+            for description, value in itertools.izip(
+                self._result.description, row)
         )
 
     def fetchall(self):
@@ -193,14 +198,18 @@ class DictCursor(Cursor):
         return row
 
 _Description = collections.namedtuple("Description", [
-    "name", "type_code", "display_size", "internal_size", "precision", "scale", "null_ok"
+    "name", "type_code", "display_size", "internal_size", "precision", "scale",
+    "null_ok"
 ])
+
+
 class Description(_Description):
     def __new__(cls, *args, **kwargs):
         charsetnr = kwargs.pop("charsetnr")
         self = super(Description, cls).__new__(cls, *args, **kwargs)
         self.charsetnr = charsetnr
         return self
+
 
 class Result(object):
     def __init__(self, cursor):
@@ -213,11 +222,11 @@ class Result(object):
         if self.cursor._executed.upper().startswith("CREATE"):
             cursor.rowcount = -1
         else:
-            cursor.rowcount = libmysql.c.mysql_affected_rows(cursor.connection._db)
+            cursor.rowcount = \
+                libmysql.c.mysql_affected_rows(cursor.connection._db)
         if not self._result:
             cursor.lastrowid = libmysql.c.mysql_insert_id(cursor.connection._db)
             return
-
 
         self.description = self._describe()
         self.row_decoders = [
@@ -240,11 +249,12 @@ class Result(object):
             if not row[i]:
                 r[i] = None
             else:
-                val = ctypes.string_at(row[i], lengths[i])
+                # val = ctypes.string_at(row[i], lengths[i])
+                val = ''.join(row[i][index] for index in xrange(lengths[i]))
                 if decoder is None:
-                    raise self.cursor.connection.InternalError("No decoder for"
-                        " type %s, value: %s" % (self.description[i][1], val)
-                    )
+                    raise self.cursor.connection.InternalError(
+                        "No decoder for"
+                        " type %s, value: %s" % (self.description[i][1], val))
                 r[i] = decoder(val)
 
         return tuple(r)
@@ -256,7 +266,8 @@ class Result(object):
         for i in xrange(n):
             f = fields[i]
             d[i] = Description(
-                ctypes.string_at(f.name, f.name_length),
+                # ctypes.string_at(f.name, f.name_length),
+                ''.join(f.name[i] for i in xrange(f.name_length)),
                 f.type,
                 f.max_length,
                 f.length,
@@ -269,7 +280,8 @@ class Result(object):
 
     def _check_rows(self, meth):
         if self.rows is None:
-            raise self.cursor.connection.ProgrammingError("Can't %s from a "
+            raise self.cursor.connection.ProgrammingError(
+                "Can't %s from a "
                 "query with no result rows" % meth)
 
     def close(self):

@@ -8,19 +8,25 @@ from MySQLdb.constants import field_types
 def literal(value):
     return lambda conn, obj: value
 
+
 def unicode_to_quoted_sql(connection, obj):
-    return connection.string_literal(obj.encode(connection.character_set_name()))
+    return connection.string_literal(
+        obj.encode(connection.character_set_name()))
+
 
 def object_to_quoted_sql(connection, obj):
     if hasattr(obj, "__unicode__"):
         return unicode_to_quoted_sql(connection, unicode(obj))
     return connection.string_literal(str(obj))
 
+
 def fallback_encoder(obj):
     return object_to_quoted_sql
 
+
 def literal_encoder(connection, obj):
     return str(obj)
+
 
 def datetime_encoder(connection, obj):
     return connection.string_literal(obj.strftime("%Y-%m-%d %H:%M:%S"))
@@ -32,6 +38,7 @@ _simple_field_encoders = {
     unicode: unicode_to_quoted_sql,
     datetime: datetime_encoder,
 }
+
 
 def simple_encoder(obj):
     return _simple_field_encoders.get(type(obj))
@@ -49,21 +56,24 @@ def datetime_decoder(value):
         time(*[int(part) for part in time_part.split(":")])
     )
 
+
 def date_decoder(value):
     return date(*[int(part) for part in value.split("-")])
+
 
 def time_decoder(value):
     # MySQLdb returns a timedelta here, immitate this nonsense.
     hours, minutes, seconds = value.split(":")
     td = timedelta(
-        hours = int(hours),
-        minutes = int(minutes),
-        seconds = int(seconds),
-        microseconds = int(math.modf(float(seconds))[0]*1000000),
+        hours=int(hours),
+        minutes=int(minutes),
+        seconds=int(seconds),
+        microseconds=int(math.modf(float(seconds))[0]*1000000),
     )
     if hours < 0:
         td = -td
     return td
+
 
 def timestamp_decoder(value):
     if " " in value:
@@ -92,6 +102,7 @@ _simple_field_decoders = {
     field_types.TIME: time_decoder,
     field_types.TIMESTAMP: timestamp_decoder,
 }
+
 
 def fallback_decoder(connection, field):
     return _simple_field_decoders.get(field[1])

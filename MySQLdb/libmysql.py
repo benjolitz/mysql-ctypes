@@ -125,8 +125,8 @@ typedef struct st_mem_root
   size_t min_malloc;
   size_t block_size;               /* initial block size */
   unsigned int block_num;          /* allocated blocks counter */
-  /* 
-     first free block in queue test counter (if it exceed 
+  /*
+     first free block in queue test counter (if it exceed
      MAX_BLOCK_USAGE_BEFORE_DROP block will be dropped in 'used' list)
   */
   unsigned int first_block_usage;
@@ -140,8 +140,7 @@ typedef struct st_list {
   void *data;
 } LIST;
 
-enum mysql_status 
-{
+enum mysql_status {
   MYSQL_STATUS_READY, MYSQL_STATUS_GET_RESULT, MYSQL_STATUS_USE_RESULT,
   MYSQL_STATUS_STATEMENT_GET_RESULT
 };
@@ -232,7 +231,8 @@ typedef struct st_mysql
   const struct st_mysql_methods *methods;
   void *thd;
   /*
-    Points to boolean flag in MYSQL_RES  or MYSQL_STMT. We set this flag 
+    Points to boolean flag in MYSQL_RES  or MYSQL_STMT.
+    We set this flag
     from mysql_stmt_close if close had to cancel result set of this object.
   */
   my_bool *unbuffered_fetch_owner;
@@ -267,7 +267,7 @@ typedef struct st_mysql_res {
   unsigned int  field_count, current_field;
   my_bool   eof;            /* Used by mysql_fetch_row */
   /* mysql_stmt_close() had to cancel this result */
-  my_bool       unbuffered_fetch_cancelled;  
+  my_bool       unbuffered_fetch_cancelled;
   void *extension;
 } MYSQL_RES;
 

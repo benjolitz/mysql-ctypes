@@ -1,3 +1,5 @@
+Note: The below is going to change to state this fork uses CFFI.
+
 mysql-ctypes
 ============
 
