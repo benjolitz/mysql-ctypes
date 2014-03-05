@@ -2,7 +2,6 @@ import collections
 # import ctypes
 import itertools
 import re
-import warnings
 import weakref
 
 
@@ -13,8 +12,7 @@ INSERT_VALUES = re.compile(
     r"(?P<start>.+values\s*)"
     r"(?P<values>\(((?<!\\)'[^\)]*?\)[^\)]*(?<!\\)?'|[^\(\)]|(?:\([^\)]*\)))+\))"
     r"(?P<end>.*)",
-    re.I
-)
+    re.I)
 
 
 class Cursor(object):
