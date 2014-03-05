@@ -29,9 +29,11 @@ class Connection(object):
             self, host=None, user=None, passwd=None, db=None, port=0,
             client_flag=0, charset=None, init_command=None,
             connect_timeout=None, sql_mode=None, encoders=None,
-            decoders=None, use_unicode=True):
+            decoders=None, use_unicode=True, cursorclass=None):
 
-        self._db = libmysql.c.mysql_init(None)
+        self.mysql_primary_struct = libmysql.ffi.new('MYSQL *')
+        self._db = libmysql.c.mysql_init(self.mysql_primary_struct)
+        self.cursorclass = cursorclass
 
         if connect_timeout is not None:
             # connect_timeout = c_uint(connect_timeout)
@@ -126,7 +128,7 @@ class Connection(object):
 
     def cursor(self, cursor_class=None, encoders=None, decoders=None):
         if cursor_class is None:
-            cursor_class = cursors.Cursor
+            cursor_class = self.cursorclass or cursors.Cursor
         if encoders is None:
             encoders = self.encoders[:]
         if decoders is None:
