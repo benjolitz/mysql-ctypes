@@ -292,6 +292,7 @@ MYSQL_RES* mysql_store_result(MYSQL *mysql);
 unsigned int mysql_num_fields(MYSQL_RES *res);
 MYSQL_ROW mysql_fetch_row(MYSQL_RES *result);
 unsigned long * mysql_fetch_lengths(MYSQL_RES *result);
+MYSQL_FIELD * mysql_fetch_fields(MYSQL_RES *res);
 MYSQL_FIELD * mysql_fetch_field(MYSQL_RES *result);
 unsigned long mysql_escape_string(char *to,char *from,
                         unsigned long from_length);
